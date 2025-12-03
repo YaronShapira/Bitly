@@ -1,39 +1,47 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { Url } from './entities/url.entity';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class UrlsService {
-  constructor() {}
+  constructor(private prisma: PrismaService) {}
 
-  urls: Url[] = [];
+  async createUrl(createUrlDto: CreateUrlDto): Promise<Url> {
+    const { originalUrl, customShortUrl = '' } = createUrlDto;
 
-  create(dto: CreateUrlDto): Url {
-    if (dto.customShortUrl) {
-      const isCustomUrlExists = this.urls.some((url) => url.shortUrl === dto.customShortUrl);
+    await this.validateCustomShortUrl(customShortUrl);
 
-      if (isCustomUrlExists) {
-        throw new BadRequestException('Custom short URL already taken');
-      }
-    }
+    const shortUrl = customShortUrl || this.generateShortUrl();
 
-    // Generate short code if none provided
-    const shortUrl = dto.customShortUrl ?? this.generateShortUrl();
-
-    const url: Url = {
-      id: this.urls.length + 1,
+    const url: Omit<Url, 'id' | 'createdAt' | 'updatedAt'> = {
       shortUrl,
-      originalUrl: dto.originalUrl,
-      createdAt: new Date(),
+      originalUrl,
     };
 
-    this.urls.push(url);
+    console.info(`Successfully created short URL "${shortUrl}" for original URL: ${originalUrl}`);
 
-    console.log({ urls: this.urls });
+    const createdUrl = await this.prisma.url.create({ data: url });
 
-    return url;
+    return createdUrl;
   }
 
+  private async validateCustomShortUrl(customShortUrl: string): Promise<void> {
+    if (!customShortUrl) {
+      return;
+    }
+
+    const isCustomUrlExists = await this.prisma.url.findUnique({ where: { shortUrl: customShortUrl } });
+
+    if (isCustomUrlExists) {
+      const errorMessage = `Custom short URL "${customShortUrl}" already taken`;
+
+      console.error(errorMessage);
+      throw new BadRequestException(errorMessage);
+    }
+  }
+
+  // TODO: Improve this function to avoid collisions
   private generateShortUrl(): string {
     return Math.random().toString(36).substring(2, 8);
   }

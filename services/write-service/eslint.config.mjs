@@ -33,6 +33,17 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
+      "padding-line-between-statements": [
+        "error",
+        // Require blank line *after* variable declarations
+        { "blankLine": "always", "prev": ["const", "let", "var"], "next": "*" },
+        // But allow multiple const/let together without blank line
+        { "blankLine": "any", "prev": ["const", "let", "var"], "next": ["const", "let", "var"] },
+        // Optional: require blank line before return (recommended)
+        { "blankLine": "always", "prev": "*", "next": "return" }
+      ]
     },
   },
+
+
 );
