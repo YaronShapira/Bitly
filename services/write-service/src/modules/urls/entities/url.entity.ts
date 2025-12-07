@@ -1,7 +1,7 @@
 // @Entity()
 export class Url {
   // @PrimaryGeneratedColumn()
-  id?: number;
+  id?: string;
 
   // @Column({ unique: true })
   shortUrl: string;

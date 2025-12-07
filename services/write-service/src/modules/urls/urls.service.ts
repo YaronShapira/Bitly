@@ -1,18 +1,25 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import base62 from 'base62';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { Url } from './entities/url.entity';
 import { PrismaService } from '../../../prisma/prisma.service';
+import Redis from 'ioredis';
 
 @Injectable()
 export class UrlsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+  ) {}
+
+  private readonly COUNTER_KEY = 'url:id:counter';
 
   async createUrl(createUrlDto: CreateUrlDto): Promise<Url> {
     const { originalUrl, customShortUrl = '' } = createUrlDto;
 
     await this.validateCustomShortUrl(customShortUrl);
 
-    const shortUrl = customShortUrl || this.generateShortUrl();
+    const shortUrl = customShortUrl || (await this.generateShortUrl());
 
     const url: Omit<Url, 'id' | 'createdAt' | 'updatedAt'> = {
       shortUrl,
@@ -41,8 +48,10 @@ export class UrlsService {
     }
   }
 
-  // TODO: Improve this function to avoid collisions
-  private generateShortUrl(): string {
-    return Math.random().toString(36).substring(2, 8);
+  private async generateShortUrl(): Promise<string> {
+    const counter = await this.redis.incr(this.COUNTER_KEY);
+    const shortUrl = base62.encode(Number(counter)).padStart(7, '0');
+
+    return shortUrl;
   }
 }

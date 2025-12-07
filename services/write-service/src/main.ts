@@ -19,7 +19,7 @@ async function bootstrap() {
       }),
     );
 
-    // Global prefix for all routes (optional)
+    // Global prefix for all routes
     app.setGlobalPrefix('api');
 
     await app.listen(3000);
