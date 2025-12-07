@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
+import { loggingMiddleware } from './middlewares/logging.middleware';
 dotenv.config();
 
 async function bootstrap() {
@@ -10,6 +11,7 @@ async function bootstrap() {
       bufferLogs: true, // Buffer logs for better startup performance
     });
 
+    app.use(loggingMiddleware);
     app.enableShutdownHooks();
 
     // app.useGlobalPipes(

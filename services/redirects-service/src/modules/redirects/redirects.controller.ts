@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Res } from '@nestjs/common';
 import { RedirectsService } from './redirects.service';
 import type { Response } from 'express';
 
@@ -7,14 +7,14 @@ export class RedirectsController {
   constructor(private readonly redirectsService: RedirectsService) {}
 
   @Get(':shortUrl')
-  async redirectUrl(@Param('shortUrl') shortUrl: string, @Res() res: Response): Promise<void> {
-    // Validate shortUrl is String
-    const originalUrl = await this.redirectsService.getShortUrl(shortUrl);
+  async redirectUrl(@Param('shortUrl') shortUrl: string, @Res() res: Response): Promise<any> {
+    if (!/^[a-zA-Z0-9_-]+$/.test(shortUrl)) {
+      throw new BadRequestException('Invalid short URL format.');
+    }
 
-    const test = `https://${originalUrl}`;
+    const originalUrl = await this.redirectsService.resolveShortUrl(shortUrl);
 
-    console.log(test);
-
-    res.redirect(test);
+    // res.redirect(301, originalUrl);
+    res.status(200).send({ originalUrl });
   }
 }
